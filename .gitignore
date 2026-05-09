@@ -1,0 +1,16 @@
+.env
+node_modules/
+dist/
+coverage/
+*.log
+*.tsbuildinfo
+
+# Firebase service account keys and other local secrets
+*.json
+!package.json
+!tsconfig.json
+!tsconfig.build.json
+
+# Prisma local artifacts
+prisma/migrations/
+

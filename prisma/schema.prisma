@@ -1,0 +1,99 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  ADMIN
+  EDITOR
+}
+
+enum BlogStatus {
+  DRAFT
+  PUBLISHED
+}
+
+model User {
+  id            String         @id @default(cuid())
+  name          String
+  email         String         @unique
+  password      String
+  role          Role           @default(EDITOR)
+  blogs         Blog[]
+  refreshTokens RefreshToken[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model RefreshToken {
+  id        String   @id
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model Blog {
+  id              String      @id @default(cuid())
+  title           String
+  slug            String      @unique
+  excerpt         String
+  content         String      @db.Text
+  featuredImage   String?
+  categoryId      String?
+  category        Category?   @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  authorId        String
+  author          User        @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  metaTitle       String?
+  metaDescription String?
+  pinterestUrl    String?
+  status          BlogStatus  @default(DRAFT)
+  readingTime     Int         @default(1)
+  views           Int         @default(0)
+  products        Product[]
+  tags            Tag[]
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@index([slug])
+  @@index([status, createdAt(sort: Desc)])
+  @@index([categoryId])
+  @@index([views(sort: Desc)])
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  blogId       String
+  blog         Blog     @relation(fields: [blogId], references: [id], onDelete: Cascade)
+  title        String
+  description  String
+  image        String?
+  buyUrl       String
+  price        String?
+  createdAt    DateTime @default(now())
+
+  @@index([blogId])
+}
+
+model Category {
+  id    String @id @default(cuid())
+  name  String
+  slug  String @unique
+  blogs Blog[]
+}
+
+model Tag {
+  id    String @id @default(cuid())
+  name  String
+  slug  String @unique
+  blogs Blog[]
+}
