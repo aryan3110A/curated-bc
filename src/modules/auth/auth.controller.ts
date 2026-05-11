@@ -6,11 +6,13 @@ import { durationToMs } from "../../utils/duration";
 import { ACCESS_COOKIE_NAME, REFRESH_COOKIE_NAME } from "./auth.constants";
 import { authService } from "./auth.service";
 
+const cookieDomain = env.COOKIE_DOMAIN?.trim() || undefined;
+
 const sharedCookieOptions = {
   httpOnly: true,
   secure: isProduction,
-  sameSite: "lax" as const,
-  domain: env.COOKIE_DOMAIN,
+  sameSite: (isProduction ? "none" : "lax") as "none" | "lax",
+  ...(cookieDomain ? { domain: cookieDomain } : {}),
   path: "/"
 };
 
