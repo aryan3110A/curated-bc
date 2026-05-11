@@ -13,6 +13,28 @@ import { apiRouter } from "./routes";
 
 export const app = express();
 
+const compactReqSerializer = (req: {
+  id?: string | number;
+  method?: string;
+  url?: string;
+  query?: unknown;
+  params?: unknown;
+  remoteAddress?: string;
+  remotePort?: number;
+}) => ({
+  id: req.id,
+  method: req.method,
+  url: req.url,
+  query: req.query,
+  params: req.params,
+  remoteAddress: req.remoteAddress,
+  remotePort: req.remotePort
+});
+
+const compactResSerializer = (res: { statusCode?: number }) => ({
+  statusCode: res.statusCode
+});
+
 app.set("trust proxy", 1);
 app.disable("x-powered-by");
 
@@ -42,7 +64,17 @@ app.use(
     legacyHeaders: false
   }) as unknown as RequestHandler
 );
-app.use(pinoHttp({ logger }));
+app.use(
+  pinoHttp({
+    logger,
+    serializers: {
+      req: compactReqSerializer,
+      res: compactResSerializer
+    },
+    customSuccessMessage: (req, res) => `${req.method} ${req.url} -> ${res.statusCode}`,
+    customErrorMessage: (req, res, error) => `${req.method} ${req.url} -> ${res.statusCode} (${error.message})`
+  })
+);
 app.use(express.json({ limit: "4mb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser() as unknown as RequestHandler);

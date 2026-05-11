@@ -1,7 +1,8 @@
 import { asyncHandler } from "../../utils/async-handler";
 import { blogService } from "./blog.service";
 
-const canManageDrafts = (role?: string) => role === "ADMIN" || role === "EDITOR";
+const canManageDrafts = (role?: string) =>
+  role === "ADMIN" || role === "EDITOR";
 
 export const listBlogsController = asyncHandler(async (req, res) => {
   const includeDrafts = canManageDrafts(req.user?.role);
@@ -24,14 +25,14 @@ export const listBlogsController = asyncHandler(async (req, res) => {
       search: query.search,
       category: query.category,
       status: query.status,
-      sort: query.sort ?? "latest"
+      sort: query.sort ?? "latest",
     },
-    includeDrafts
+    includeDrafts,
   );
 
   res.status(200).json({
     success: true,
-    data
+    data,
   });
 });
 
@@ -41,7 +42,19 @@ export const getBlogBySlugController = asyncHandler(async (req, res) => {
 
   res.status(200).json({
     success: true,
-    data
+    data,
+  });
+});
+
+export const trackBlogVisitController = asyncHandler(async (req, res) => {
+  const data = await blogService.trackVisit(
+    req.params.slug,
+    req.body.visitorId,
+  );
+
+  res.status(200).json({
+    success: true,
+    data,
   });
 });
 
@@ -50,7 +63,7 @@ export const getBlogByIdController = asyncHandler(async (req, res) => {
 
   res.status(200).json({
     success: true,
-    data: blog
+    data: blog,
   });
 });
 
@@ -59,7 +72,7 @@ export const createBlogController = asyncHandler(async (req, res) => {
 
   res.status(201).json({
     success: true,
-    data: blog
+    data: blog,
   });
 });
 
@@ -68,7 +81,7 @@ export const updateBlogController = asyncHandler(async (req, res) => {
 
   res.status(200).json({
     success: true,
-    data: blog
+    data: blog,
   });
 });
 
@@ -77,7 +90,7 @@ export const deleteBlogController = asyncHandler(async (req, res) => {
 
   res.status(200).json({
     success: true,
-    message: "Blog deleted successfully."
+    message: "Blog deleted successfully.",
   });
 });
 
@@ -86,6 +99,6 @@ export const adminBlogSummaryController = asyncHandler(async (_req, res) => {
 
   res.status(200).json({
     success: true,
-    data: summary
+    data: summary,
   });
 });

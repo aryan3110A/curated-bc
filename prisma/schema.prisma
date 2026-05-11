@@ -59,8 +59,10 @@ model Blog {
   status          BlogStatus  @default(DRAFT)
   readingTime     Int         @default(1)
   views           Int         @default(0)
+  uniqueViews     Int         @default(0)
   products        Product[]
   tags            Tag[]
+  blogVisits      BlogVisit[]
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
@@ -68,6 +70,20 @@ model Blog {
   @@index([status, createdAt(sort: Desc)])
   @@index([categoryId])
   @@index([views(sort: Desc)])
+}
+
+model BlogVisit {
+  id            String   @id @default(cuid())
+  blogId        String
+  blog          Blog     @relation(fields: [blogId], references: [id], onDelete: Cascade)
+  visitorId     String
+  totalVisits   Int      @default(1)
+  firstViewedAt DateTime @default(now())
+  lastViewedAt  DateTime @default(now())
+
+  @@unique([blogId, visitorId])
+  @@index([blogId])
+  @@index([visitorId])
 }
 
 model Product {

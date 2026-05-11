@@ -1,5 +1,8 @@
 import { StatusCodes } from "http-status-codes";
-import type { BlogStatus as BlogPublicationStatus, Prisma } from "@prisma/client";
+import type {
+  BlogStatus as BlogPublicationStatus,
+  Prisma,
+} from "@prisma/client";
 
 import { AppError } from "../../utils/app-error";
 import { estimateReadingTime, sanitizeBlogContent } from "../../utils/content";
@@ -53,7 +56,7 @@ const mapProducts = (products: ProductInput[]) =>
     description: product.description,
     image: normalizeOptional(product.image) ?? undefined,
     buyUrl: product.buyUrl,
-    price: normalizeOptional(product.price) ?? undefined
+    price: normalizeOptional(product.price) ?? undefined,
   }));
 
 const buildUniqueSlug = async (value: string, excludeId?: string) => {
@@ -74,7 +77,10 @@ const buildUniqueSlug = async (value: string, excludeId?: string) => {
   return `${baseSlug}-${suffix}`;
 };
 
-const buildCreateData = async (authorId: string, input: BlogInput): Promise<Prisma.BlogCreateInput> => {
+const buildCreateData = async (
+  authorId: string,
+  input: BlogInput,
+): Promise<Prisma.BlogCreateInput> => {
   const content = sanitizeBlogContent(input.content);
   const slug = await buildUniqueSlug(input.slug || input.title);
 
@@ -90,27 +96,30 @@ const buildCreateData = async (authorId: string, input: BlogInput): Promise<Pris
     status: input.status,
     readingTime: estimateReadingTime(content),
     author: {
-      connect: { id: authorId }
+      connect: { id: authorId },
     },
     category: input.categoryId
       ? {
-          connect: { id: input.categoryId }
+          connect: { id: input.categoryId },
         }
       : undefined,
     tags: input.tagIds.length
       ? {
-          connect: input.tagIds.map((id) => ({ id }))
+          connect: input.tagIds.map((id) => ({ id })),
         }
       : undefined,
     products: input.products.length
       ? {
-          create: mapProducts(input.products)
+          create: mapProducts(input.products),
         }
-      : undefined
+      : undefined,
   };
 };
 
-const buildUpdateData = async (blogId: string, input: BlogInput): Promise<Prisma.BlogUpdateInput> => {
+const buildUpdateData = async (
+  blogId: string,
+  input: BlogInput,
+): Promise<Prisma.BlogUpdateInput> => {
   const content = sanitizeBlogContent(input.content);
   const slug = await buildUniqueSlug(input.slug || input.title, blogId);
 
@@ -127,22 +136,22 @@ const buildUpdateData = async (blogId: string, input: BlogInput): Promise<Prisma
     readingTime: estimateReadingTime(content),
     category: input.categoryId
       ? {
-          connect: { id: input.categoryId }
+          connect: { id: input.categoryId },
         }
       : {
-          disconnect: true
+          disconnect: true,
         },
     tags: {
-      set: input.tagIds.map((id) => ({ id }))
+      set: input.tagIds.map((id) => ({ id })),
     },
     products: {
       deleteMany: {},
       ...(input.products.length
         ? {
-            create: mapProducts(input.products)
+            create: mapProducts(input.products),
           }
-        : {})
-    }
+        : {}),
+    },
   };
 };
 
@@ -150,7 +159,7 @@ export const blogService = {
   async list(filters: BlogListFilters, includeDrafts: boolean) {
     const result = await blogRepository.list({
       ...filters,
-      includeDrafts
+      includeDrafts,
     });
 
     return {
@@ -159,8 +168,8 @@ export const blogService = {
         page: filters.page,
         pageSize: filters.pageSize,
         total: result.total,
-        pageCount: Math.ceil(result.total / filters.pageSize)
-      }
+        pageCount: Math.ceil(result.total / filters.pageSize),
+      },
     };
   },
 
@@ -171,16 +180,25 @@ export const blogService = {
       throw new AppError("Blog not found.", StatusCodes.NOT_FOUND);
     }
 
-    if (blog.status === "PUBLISHED") {
-      await blogRepository.incrementViews(blog.id);
-    }
-
-    const relatedBlogs = await blogRepository.listRelated(blog.id, blog.categoryId);
+    const relatedBlogs = await blogRepository.listRelated(
+      blog.id,
+      blog.categoryId,
+    );
 
     return {
-      blog: blog.status === "PUBLISHED" ? { ...blog, views: blog.views + 1 } : blog,
-      relatedBlogs
+      blog,
+      relatedBlogs,
     };
+  },
+
+  async trackVisit(slug: string, visitorId: string) {
+    const blog = await blogRepository.findBySlug(slug, false);
+
+    if (!blog) {
+      throw new AppError("Blog not found.", StatusCodes.NOT_FOUND);
+    }
+
+    return blogRepository.trackVisit(blog.id, visitorId);
   },
 
   async getById(blogId: string) {
@@ -219,5 +237,5 @@ export const blogService = {
 
   getAdminSummary() {
     return blogRepository.getAdminSummary();
-  }
+  },
 };

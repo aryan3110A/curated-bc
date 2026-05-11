@@ -10,7 +10,7 @@ export const productInputSchema = z.object({
   description: z.string().min(10).max(500),
   image: optionalUrl.transform((value) => value || undefined),
   buyUrl: z.string().url(),
-  price: optionalText.transform((value) => value || undefined)
+  price: optionalText.transform((value) => value || undefined),
 });
 
 export const blogBodySchema = z.object({
@@ -25,18 +25,18 @@ export const blogBodySchema = z.object({
   metaDescription: optionalText.transform((value) => value || undefined),
   pinterestUrl: optionalUrl.transform((value) => value || undefined),
   status: z.nativeEnum(BlogStatus).default(BlogStatus.DRAFT),
-  products: z.array(productInputSchema).default([])
+  products: z.array(productInputSchema).default([]),
 });
 
 export const createBlogSchema = z.object({
-  body: blogBodySchema
+  body: blogBodySchema,
 });
 
 export const updateBlogSchema = z.object({
   params: z.object({
-    id: z.string().min(1)
+    id: z.string().min(1),
   }),
-  body: blogBodySchema
+  body: blogBodySchema,
 });
 
 export const listBlogsSchema = z.object({
@@ -46,12 +46,21 @@ export const listBlogsSchema = z.object({
     search: optionalText.transform((value) => value || undefined),
     category: optionalText.transform((value) => value || undefined),
     status: z.nativeEnum(BlogStatus).optional(),
-    sort: z.enum(["latest", "trending"]).default("latest")
-  })
+    sort: z.enum(["latest", "trending"]).default("latest"),
+  }),
 });
 
 export const getBlogBySlugSchema = z.object({
   params: z.object({
-    slug: z.string().min(1)
-  })
+    slug: z.string().min(1),
+  }),
+});
+
+export const trackBlogVisitSchema = z.object({
+  params: z.object({
+    slug: z.string().min(1),
+  }),
+  body: z.object({
+    visitorId: z.string().min(16).max(128),
+  }),
 });

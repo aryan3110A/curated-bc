@@ -11,6 +11,7 @@ export const blogCardSelect = {
   status: true,
   readingTime: true,
   views: true,
+  uniqueViews: true,
   createdAt: true,
   updatedAt: true,
   metaTitle: true,
@@ -20,12 +21,12 @@ export const blogCardSelect = {
     select: {
       id: true,
       name: true,
-      email: true
-    }
+      email: true,
+    },
   },
   category: true,
   tags: true,
-  products: true
+  products: true,
 } satisfies Prisma.BlogSelect;
 
 export const blogDetailInclude = {
@@ -33,12 +34,12 @@ export const blogDetailInclude = {
     select: {
       id: true,
       name: true,
-      email: true
-    }
+      email: true,
+    },
   },
   category: true,
   tags: true,
-  products: true
+  products: true,
 } satisfies Prisma.BlogInclude;
 
 type ListBlogFilters = {
@@ -65,31 +66,31 @@ const buildWhere = (filters: ListBlogFilters): Prisma.BlogWhereInput => {
       {
         title: {
           contains: filters.search,
-          mode: "insensitive"
-        }
+          mode: "insensitive",
+        },
       },
       {
         excerpt: {
           contains: filters.search,
-          mode: "insensitive"
-        }
+          mode: "insensitive",
+        },
       },
       {
         tags: {
           some: {
             name: {
               contains: filters.search,
-              mode: "insensitive"
-            }
-          }
-        }
-      }
+              mode: "insensitive",
+            },
+          },
+        },
+      },
     ];
   }
 
   if (filters.category) {
     where.category = {
-      slug: filters.category
+      slug: filters.category,
     };
   }
 
@@ -99,7 +100,10 @@ const buildWhere = (filters: ListBlogFilters): Prisma.BlogWhereInput => {
 export const blogRepository = {
   async list(filters: ListBlogFilters) {
     const where = buildWhere(filters);
-    const orderBy = filters.sort === "trending" ? { views: "desc" as const } : { createdAt: "desc" as const };
+    const orderBy =
+      filters.sort === "trending"
+        ? { views: "desc" as const }
+        : { createdAt: "desc" as const };
     const skip = (filters.page - 1) * filters.pageSize;
 
     const [items, total] = await db.$transaction([
@@ -108,14 +112,14 @@ export const blogRepository = {
         orderBy,
         skip,
         take: filters.pageSize,
-        select: blogCardSelect
+        select: blogCardSelect,
       }),
-      db.blog.count({ where })
+      db.blog.count({ where }),
     ]);
 
     return {
       items,
-      total
+      total,
     };
   },
 
@@ -123,16 +127,16 @@ export const blogRepository = {
     return db.blog.findFirst({
       where: {
         slug,
-        ...(includeDrafts ? {} : { status: BlogStatus.PUBLISHED })
+        ...(includeDrafts ? {} : { status: BlogStatus.PUBLISHED }),
       },
-      include: blogDetailInclude
+      include: blogDetailInclude,
     });
   },
 
   findById(id: string) {
     return db.blog.findUnique({
       where: { id },
-      include: blogDetailInclude
+      include: blogDetailInclude,
     });
   },
 
@@ -140,26 +144,26 @@ export const blogRepository = {
     return db.blog.findMany({
       where: {
         slug: {
-          startsWith: baseSlug
+          startsWith: baseSlug,
         },
         ...(excludeId
           ? {
               NOT: {
-                id: excludeId
-              }
+                id: excludeId,
+              },
             }
-          : {})
+          : {}),
       },
       select: {
-        slug: true
-      }
+        slug: true,
+      },
     });
   },
 
   create(data: Prisma.BlogCreateInput) {
     return db.blog.create({
       data,
-      include: blogDetailInclude
+      include: blogDetailInclude,
     });
   },
 
@@ -167,13 +171,13 @@ export const blogRepository = {
     return db.blog.update({
       where: { id },
       data,
-      include: blogDetailInclude
+      include: blogDetailInclude,
     });
   },
 
   delete(id: string) {
     return db.blog.delete({
-      where: { id }
+      where: { id },
     });
   },
 
@@ -182,9 +186,56 @@ export const blogRepository = {
       where: { id },
       data: {
         views: {
-          increment: 1
-        }
+          increment: 1,
+        },
+      },
+    });
+  },
+
+  async trackVisit(blogId: string, visitorId: string) {
+    return db.$transaction(async (tx) => {
+      const createdVisit = await tx.blogVisit.createMany({
+        data: [
+          {
+            blogId,
+            visitorId,
+          },
+        ],
+        skipDuplicates: true,
+      });
+
+      if (!createdVisit.count) {
+        await tx.blogVisit.update({
+          where: {
+            blogId_visitorId: {
+              blogId,
+              visitorId,
+            },
+          },
+          data: {
+            totalVisits: {
+              increment: 1,
+            },
+            lastViewedAt: new Date(),
+          },
+        });
       }
+
+      return tx.blog.update({
+        where: { id: blogId },
+        data: {
+          views: {
+            increment: 1,
+          },
+          uniqueViews: {
+            increment: createdVisit.count ? 1 : 0,
+          },
+        },
+        select: {
+          views: true,
+          uniqueViews: true,
+        },
+      });
     });
   },
 
@@ -196,36 +247,42 @@ export const blogRepository = {
     return db.blog.findMany({
       where: {
         id: {
-          not: blogId
+          not: blogId,
         },
         categoryId,
-        status: BlogStatus.PUBLISHED
+        status: BlogStatus.PUBLISHED,
       },
       orderBy: {
-        createdAt: "desc"
+        createdAt: "desc",
       },
       take: 3,
-      select: blogCardSelect
+      select: blogCardSelect,
     });
   },
 
   async getAdminSummary() {
-    const [totalBlogs, publishedBlogs, draftBlogs, viewsAggregate, recentBlogs] = await db.$transaction([
+    const [
+      totalBlogs,
+      publishedBlogs,
+      draftBlogs,
+      viewsAggregate,
+      recentBlogs,
+    ] = await db.$transaction([
       db.blog.count(),
       db.blog.count({ where: { status: BlogStatus.PUBLISHED } }),
       db.blog.count({ where: { status: BlogStatus.DRAFT } }),
       db.blog.aggregate({
         _sum: {
-          views: true
-        }
+          views: true,
+        },
       }),
       db.blog.findMany({
         orderBy: {
-          updatedAt: "desc"
+          updatedAt: "desc",
         },
         take: 5,
-        select: blogCardSelect
-      })
+        select: blogCardSelect,
+      }),
     ]);
 
     return {
@@ -233,7 +290,7 @@ export const blogRepository = {
       publishedBlogs,
       draftBlogs,
       totalViews: viewsAggregate._sum.views ?? 0,
-      recentBlogs
+      recentBlogs,
     };
-  }
+  },
 };
