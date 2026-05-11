@@ -13,17 +13,21 @@ const sharedCookieOptions = {
   secure: isProduction,
   sameSite: (isProduction ? "none" : "lax") as "none" | "lax",
   ...(cookieDomain ? { domain: cookieDomain } : {}),
-  path: "/"
+  path: "/",
 };
 
-const setAuthCookies = (res: Response, accessToken: string, refreshToken: string) => {
+const setAuthCookies = (
+  res: Response,
+  accessToken: string,
+  refreshToken: string,
+) => {
   res.cookie(ACCESS_COOKIE_NAME, accessToken, {
     ...sharedCookieOptions,
-    maxAge: durationToMs(env.ACCESS_TOKEN_TTL)
+    maxAge: durationToMs(env.ACCESS_TOKEN_TTL),
   });
   res.cookie(REFRESH_COOKIE_NAME, refreshToken, {
     ...sharedCookieOptions,
-    maxAge: durationToMs(env.REFRESH_TOKEN_TTL)
+    maxAge: durationToMs(env.REFRESH_TOKEN_TTL),
   });
 };
 
@@ -41,8 +45,8 @@ export const loginController = asyncHandler(async (req, res) => {
   res.status(200).json({
     success: true,
     data: {
-      user: result.user
-    }
+      user: result.user,
+    },
   });
 });
 
@@ -55,8 +59,8 @@ export const refreshController = asyncHandler(async (req, res) => {
   res.status(200).json({
     success: true,
     data: {
-      user: result.user
-    }
+      user: result.user,
+    },
   });
 });
 
@@ -67,7 +71,7 @@ export const logoutController = asyncHandler(async (req, res) => {
 
   res.status(200).json({
     success: true,
-    message: "Logged out successfully."
+    message: "Logged out successfully.",
   });
 });
 
@@ -76,6 +80,6 @@ export const meController = asyncHandler(async (req, res) => {
 
   res.status(200).json({
     success: true,
-    data: user
+    data: user,
   });
 });
