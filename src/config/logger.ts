@@ -11,17 +11,25 @@ const transport = isProduction
         translateTime: "SYS:yyyy-mm-dd HH:MM:ss",
         ignore: "pid,hostname",
         messageFormat: "{msg}",
-        singleLine: false
-      }
+        singleLine: false,
+      },
     });
 
-export const logger = pino({
-  level: env.LOG_LEVEL,
-  base: {
-    service: "curatedcounter-api"
+export const logger = pino(
+  {
+    level: env.LOG_LEVEL,
+    base: {
+      service: "curatedcounter-api",
+    },
+    redact: {
+      paths: [
+        "req.headers.authorization",
+        "req.headers.cookie",
+        "password",
+        "refreshToken",
+      ],
+      censor: "[redacted]",
+    },
   },
-  redact: {
-    paths: ["req.headers.authorization", "req.headers.cookie", "password", "refreshToken"],
-    censor: "[redacted]"
-  }
-}, transport);
+  transport,
+);

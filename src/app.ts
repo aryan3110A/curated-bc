@@ -28,11 +28,11 @@ const compactReqSerializer = (req: {
   query: req.query,
   params: req.params,
   remoteAddress: req.remoteAddress,
-  remotePort: req.remotePort
+  remotePort: req.remotePort,
 });
 
 const compactResSerializer = (res: { statusCode?: number }) => ({
-  statusCode: res.statusCode
+  statusCode: res.statusCode,
 });
 
 app.set("trust proxy", 1);
@@ -40,8 +40,8 @@ app.disable("x-powered-by");
 
 app.use(
   helmet({
-    crossOriginResourcePolicy: false
-  })
+    crossOriginResourcePolicy: false,
+  }),
 );
 app.use(
   cors({
@@ -53,27 +53,29 @@ app.use(
 
       callback(new Error("CORS policy blocked this origin."));
     },
-    credentials: true
-  })
+    credentials: true,
+  }),
 );
 app.use(
   rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 300,
     standardHeaders: true,
-    legacyHeaders: false
-  }) as unknown as RequestHandler
+    legacyHeaders: false,
+  }) as unknown as RequestHandler,
 );
 app.use(
   pinoHttp({
     logger,
     serializers: {
       req: compactReqSerializer,
-      res: compactResSerializer
+      res: compactResSerializer,
     },
-    customSuccessMessage: (req, res) => `${req.method} ${req.url} -> ${res.statusCode}`,
-    customErrorMessage: (req, res, error) => `${req.method} ${req.url} -> ${res.statusCode} (${error.message})`
-  })
+    customSuccessMessage: (req, res) =>
+      `${req.method} ${req.url} -> ${res.statusCode}`,
+    customErrorMessage: (req, res, error) =>
+      `${req.method} ${req.url} -> ${res.statusCode} (${error.message})`,
+  }),
 );
 app.use(express.json({ limit: "4mb" }));
 app.use(express.urlencoded({ extended: true }));
@@ -82,7 +84,7 @@ app.use(cookieParser() as unknown as RequestHandler);
 app.get("/health", (_req, res) => {
   res.status(200).json({
     success: true,
-    message: "CuratedCounter API is healthy."
+    message: "CuratedCounter API is healthy.",
   });
 });
 
