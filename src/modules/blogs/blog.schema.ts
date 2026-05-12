@@ -24,7 +24,7 @@ export const blogBodySchema = z.object({
   metaTitle: optionalText.transform((value) => value || undefined),
   metaDescription: optionalText.transform((value) => value || undefined),
   pinterestUrl: optionalUrl.transform((value) => value || undefined),
-  status: z.nativeEnum(BlogStatus).default(BlogStatus.DRAFT),
+  status: z.nativeEnum(BlogStatus).default(BlogStatus.PUBLISHED),
   products: z.array(productInputSchema).default([]),
 });
 
