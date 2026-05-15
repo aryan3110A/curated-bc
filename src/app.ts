@@ -5,7 +5,7 @@ import rateLimit from "express-rate-limit";
 import helmet from "helmet";
 import pinoHttp from "pino-http";
 
-import { env } from "./config/env";
+import { env, isProduction } from "./config/env";
 import { logger } from "./config/logger";
 import { errorMiddleware } from "./middleware/error.middleware";
 import { notFoundMiddleware } from "./middleware/not-found.middleware";
@@ -35,6 +35,20 @@ const compactResSerializer = (res: { statusCode?: number }) => ({
   statusCode: res.statusCode,
 });
 
+const allowedOrigins = new Set(
+  [
+    env.CLIENT_URL,
+    ...(isProduction
+      ? []
+      : [
+          "http://localhost:3000",
+          "http://localhost:3002",
+          "http://127.0.0.1:3000",
+          "http://127.0.0.1:3002",
+        ]),
+  ].filter(Boolean),
+);
+
 app.set("trust proxy", 1);
 app.disable("x-powered-by");
 
@@ -46,7 +60,7 @@ app.use(
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || origin === env.CLIENT_URL) {
+      if (!origin || allowedOrigins.has(origin)) {
         callback(null, true);
         return;
       }
