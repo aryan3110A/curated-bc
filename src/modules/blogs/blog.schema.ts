@@ -4,20 +4,25 @@ import { z } from "zod";
 const optionalText = z.string().trim().optional().or(z.literal(""));
 const optionalUrl = z.string().url().optional().or(z.literal(""));
 
+const hasArticleContent = (value: string) =>
+  value.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().length > 0;
+
 export const productInputSchema = z.object({
   id: z.string().optional(),
-  title: z.string().min(2).max(160),
-  description: z.string().min(10).max(500),
+  title: z.string().trim().min(1).max(160),
+  description: z.string().trim().min(1).max(500),
   image: optionalUrl.transform((value) => value || undefined),
   buyUrl: z.string().url(),
   price: optionalText.transform((value) => value || undefined),
 });
 
 export const blogBodySchema = z.object({
-  title: z.string().min(4).max(160),
+  title: z.string().trim().min(1).max(160),
   slug: optionalText.transform((value) => value || undefined),
-  excerpt: z.string().min(20).max(320),
-  content: z.string().min(120),
+  excerpt: z.string().trim().min(1).max(320),
+  content: z.string().refine(hasArticleContent, {
+    message: "Article content is required.",
+  }),
   featuredImage: optionalUrl.transform((value) => value || undefined),
   categoryId: optionalText.transform((value) => value || undefined),
   tagIds: z.array(z.string()).default([]),

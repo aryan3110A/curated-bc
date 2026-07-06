@@ -14,10 +14,25 @@ export const errorMiddleware = (
   _next: NextFunction
 ) => {
   if (error instanceof ZodError) {
+    const flattened = error.flatten();
+    const fieldErrors = Object.fromEntries(
+      error.issues.map((issue) => {
+        const fieldPath = issue.path
+          .filter((segment) => segment !== "body")
+          .join(".");
+        const label = fieldPath || "request";
+
+        return [label, [issue.message]];
+      }),
+    );
+
     return res.status(StatusCodes.BAD_REQUEST).json({
       success: false,
       message: "Validation failed.",
-      errors: error.flatten()
+      errors: {
+        formErrors: flattened.formErrors,
+        fieldErrors,
+      },
     });
   }
 
